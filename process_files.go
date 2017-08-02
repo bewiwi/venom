@@ -9,7 +9,10 @@ import (
 	"sort"
 	"strings"
 
+	"bytes"
+
 	log "github.com/Sirupsen/logrus"
+	"github.com/cucumber/gherkin-go"
 	"gopkg.in/cheggaaa/pb.v1"
 	"gopkg.in/yaml.v2"
 )
@@ -68,15 +71,24 @@ func readFiles(variables map[string]string, detailsLevel string, filesPath []str
 		}
 
 		ts := TestSuite{}
-		ts.Templater = newTemplater(variables)
 		ts.Package = f
-
-		out := ts.Templater.apply(dat)
-
-		if err := yaml.Unmarshal(out, &ts); err != nil {
-			return nil, fmt.Errorf("Error while unmarshal file %s err:%s data:%s variables:%s", f, err, out, variables)
-		}
+		ts.Templater = newTemplater(variables)
 		ts.Name += " [" + f + "]"
+
+		if strings.HasSuffix(f, ".feature") {
+			gherkinDocument, _ := gherkin.ParseGherkinDocument(bytes.NewBuffer(dat))
+			for _, i := range gherkinDocument.Feature.Children {
+				scenario, ok := i.(*gherkin.Scenario)
+				if ok {
+					_ = scenario
+				}
+			}
+		} else {
+			out := ts.Templater.apply(dat)
+			if err := yaml.Unmarshal(out, &ts); err != nil {
+				return nil, fmt.Errorf("Error while unmarshal file %s err:%s data:%s variables:%s", f, err, out, variables)
+			}
+		}
 
 		nSteps := 0
 		for _, tc := range ts.TestCases {
