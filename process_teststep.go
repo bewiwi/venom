@@ -33,15 +33,13 @@ func RunTestStep(tcc TestCaseContext, e *ExecutorWrap, ts *TestSuite, tc *TestCa
 		}
 
 		// add result in templater
-		ts.Templater.Add(tc.Name, result)
+		ts.Templater.Add(fmt.Sprintf("%s_%d", tc.Name, e.stepOrder), result)
 
 		if h, ok := e.executor.(executorWithDefaultAssertions); ok {
-			isOK, errors, failures, systemout, systemerr = applyChecks(&result, step, h.GetDefaultAssertions(), l)
+			isOK, errors, failures, systemout, systemerr = applyAssertions(result, step, h.GetDefaultAssertions(), l)
 		} else {
-			isOK, errors, failures, systemout, systemerr = applyChecks(&result, step, nil, l)
+			isOK, errors, failures, systemout, systemerr = applyAssertions(result, step, nil, l)
 		}
-		// add result again for extracts values
-		ts.Templater.Add(tc.Name, result)
 
 		log.Debugf("result step:%+v", result)
 

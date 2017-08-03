@@ -22,11 +22,6 @@ type StepAssertions struct {
 	Assertions []string `json:"assertions,omitempty" yaml:"assertions,omitempty"`
 }
 
-// StepExtracts contains "step extracts"
-type StepExtracts struct {
-	Extracts map[string]string `json:"extracts,omitempty" yaml:"extracts,omitempty"`
-}
-
 // Executor execute a testStep.
 type Executor interface {
 	// Run run a Test Step
@@ -44,8 +39,9 @@ type TestCaseContext interface {
 // CommonTestCaseContext represents a Default TestCase Context
 type CommonTestCaseContext struct {
 	TestCaseContext
-	TestCase TestCase
-	Name     string
+	TestCase  TestCase
+	Name      string
+	Templater *Templater
 }
 
 // SetTestCase set testcase in context
@@ -60,10 +56,11 @@ func (t *CommonTestCaseContext) GetName() string {
 
 // ExecutorWrap contains an executor implementation and some attributes
 type ExecutorWrap struct {
-	executor Executor
-	retry    int // nb retry a test case if it is in failure.
-	delay    int // delay between two retries
-	timeout  int // timeout on executor
+	executor  Executor
+	retry     int // nb retry a test case if it is in failure.
+	delay     int // delay between two retries
+	timeout   int // timeout on executor
+	stepOrder int // number of the step in the test case
 }
 
 // executorWithDefaultAssertions execute a testStep.

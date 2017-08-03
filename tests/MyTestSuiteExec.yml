@@ -7,13 +7,11 @@ testcases:
     assertions:
     - result.code ShouldEqual 0
     - result.timeseconds ShouldBeLessThan 1
-    extracts:
-      result.systemout: foo with a {{myvariable=[a-z]+}} here
 
 - name: testB
   steps:
   - type: exec
-    script: echo {{.testA.myvariable}}
+    script: echo {{.testA_0.result.systemout | extract "foo with a [a-z]+ here"}} lol
     assertions:
     - result.code ShouldEqual 0
     - result.systemout ShouldContainSubstring bar

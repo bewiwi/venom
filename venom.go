@@ -10,6 +10,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/mitchellh/mapstructure"
 	"github.com/mndrix/tap-go"
 	"gopkg.in/yaml.v2"
 )
@@ -40,7 +41,7 @@ func RegisterExecutor(name string, e Executor) {
 
 // WrapExecutor initializes a test by name
 // no type -> exec is default
-func WrapExecutor(t map[string]interface{}, tcc TestCaseContext) (*ExecutorWrap, error) {
+func WrapExecutor(t map[string]interface{}, tcc TestCaseContext, stepOrder int) (*ExecutorWrap, error) {
 	var name string
 	var retry, delay, timeout int
 
@@ -69,10 +70,11 @@ func WrapExecutor(t map[string]interface{}, tcc TestCaseContext) (*ExecutorWrap,
 
 	if e, ok := executors[name]; ok {
 		ew := &ExecutorWrap{
-			executor: e,
-			retry:    retry,
-			delay:    delay,
-			timeout:  timeout,
+			executor:  e,
+			retry:     retry,
+			delay:     delay,
+			timeout:   timeout,
+			stepOrder: stepOrder,
 		}
 		return ew, nil
 	}
@@ -248,4 +250,8 @@ func outputResume(tests Tests, elapsed time.Duration, resumeFailures bool) {
 		totalTestSteps,
 		elapsed,
 	)
+}
+
+func Unmarshal(step TestStep, i interface{}) error {
+	return mapstructure.Decode(step, i)
 }

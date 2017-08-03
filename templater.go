@@ -1,8 +1,11 @@
 package venom
 
 import (
+	"bytes"
 	"fmt"
+	"regexp"
 	"strings"
+	"text/template"
 
 	"gopkg.in/yaml.v2"
 )
@@ -34,20 +37,28 @@ func (tmpl *Templater) Add(prefix string, values map[string]string) {
 }
 
 //ApplyOnStep executes the template on a test step
-func (tmpl *Templater) ApplyOnStep(step TestStep) (TestStep, error) {
+func (tmpl *Templater) ApplyOnStep(step *TestStep) error {
 	// Using yaml to encode/decode, it generates map[interface{}]interface{} typed data that json does not like
 	s, err := yaml.Marshal(step)
 	if err != nil {
-		return nil, fmt.Errorf("templater> Error while marshaling: %s", err)
+		return fmt.Errorf("templater> Error while marshaling: %s", err)
 	}
-	sb := tmpl.apply(s)
+
+	fmt.Println("STEP")
+	fmt.Println(step)
+
+	sb, err := tmpl.apply(s)
+	if err != nil {
+		return err
+	}
 
 	var t TestStep
 	if err := yaml.Unmarshal([]byte(sb), &t); err != nil {
-		return nil, fmt.Errorf("templater> Error while unmarshal: %s, content:%s", err, sb)
+		return fmt.Errorf("templater> Error while unmarshal: %s, content:%s", err, sb)
 	}
 
-	return t, nil
+	*step = t
+	return nil
 }
 
 //ApplyOnContext executes the template on a context
@@ -57,7 +68,10 @@ func (tmpl *Templater) ApplyOnContext(ctx map[string]interface{}) (map[string]in
 	if err != nil {
 		return nil, fmt.Errorf("templater> Error while marshaling: %s", err)
 	}
-	sb := tmpl.apply(s)
+	sb, err := tmpl.apply(s)
+	if err != nil {
+		return nil, err
+	}
 
 	var t map[string]interface{}
 	if err := yaml.Unmarshal([]byte(sb), &t); err != nil {
@@ -67,10 +81,57 @@ func (tmpl *Templater) ApplyOnContext(ctx map[string]interface{}) (map[string]in
 	return t, nil
 }
 
-func (tmpl *Templater) apply(in []byte) []byte {
-	out := string(in)
+func (tmpl *Templater) apply(in []byte) ([]byte, error) {
+	data := map[string]string{}
+	input := string(in)
+
 	for k, v := range tmpl.Values {
-		out = strings.Replace(out, "{{."+k+"}}", v, -1)
+		kb := strings.Replace(k, ".", "__", -1)
+		data[kb] = v
+		re := regexp.MustCompile("{{." + k + "(.*)}}")
+		for {
+			sm := re.FindStringSubmatch(input)
+			if len(sm) > 0 {
+				input = strings.Replace(input, sm[0], "{{."+kb+sm[1]+"}}", -1)
+			} else {
+				break
+			}
+		}
 	}
-	return []byte(out)
+
+	funcMap := template.FuncMap{
+		"extract": func(args ...interface{}) string {
+			fmt.Println(args)
+			/*
+				r, err := regexp.Compile(s2)
+				if err != nil {
+					return "Error with regex "
+				}
+
+				res := r.FindStringSubmatch(arg)
+				if len(res) == 0 {
+					fmt.Println("no match", arg)
+					return arg
+				}
+
+				fmt.Println("Extract=", strings.Join(res[1:], " "))
+
+				return strings.Join(res[1:], " ")*/
+			return ""
+		},
+	}
+
+	fmt.Println(input)
+
+	t, err := template.New("templater").Funcs(funcMap).Parse(string(input))
+	if err != nil {
+		return nil, err
+	}
+
+	var buff bytes.Buffer
+	if err := t.Execute(&buff, data); err != nil {
+		return nil, err
+	}
+
+	return buff.Bytes(), nil
 }

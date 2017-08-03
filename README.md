@@ -261,7 +261,7 @@ func (Executor) Run(ctx context.Context, l venom.Logger, step venom.TestStep) (v
 
 	// transform step to Executor Instance
 	var t Executor
-	if err := mapstructure.Decode(step, &t); err != nil {
+	if err := venom.Unmarshal(step, &t); err != nil {
 		return nil, err
 	}
 

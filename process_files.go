@@ -71,7 +71,10 @@ func readFiles(variables map[string]string, detailsLevel string, filesPath []str
 		ts.Templater = newTemplater(variables)
 		ts.Package = f
 
-		out := ts.Templater.apply(dat)
+		out, err := ts.Templater.apply(dat)
+		if err != nil {
+			return nil, err
+		}
 
 		if err := yaml.Unmarshal(out, &ts); err != nil {
 			return nil, fmt.Errorf("Error while unmarshal file %s err:%s data:%s variables:%s", f, err, out, variables)

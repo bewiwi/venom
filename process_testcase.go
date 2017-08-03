@@ -29,15 +29,15 @@ func runTestCase(ts *TestSuite, tc *TestCase, bars map[string]*pb.ProgressBar, l
 	}
 	l.Infof("start")
 
-	for _, stepIn := range tc.TestSteps {
+	for stepOrder := range tc.TestSteps {
+		step := tc.TestSteps[stepOrder]
 
-		step, erra := ts.Templater.ApplyOnStep(stepIn)
-		if erra != nil {
-			tc.Errors = append(tc.Errors, Failure{Value: erra.Error()})
+		if err := ts.Templater.ApplyOnStep(&step); err != nil {
+			tc.Errors = append(tc.Errors, Failure{Value: err.Error()})
 			break
 		}
 
-		e, err := WrapExecutor(step, tcc)
+		e, err := WrapExecutor(step, tcc, stepOrder)
 		if err != nil {
 			tc.Errors = append(tc.Errors, Failure{Value: err.Error()})
 			break

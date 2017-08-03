@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/fsamin/go-dump"
-	"github.com/mitchellh/mapstructure"
 	"github.com/smartystreets/assertions"
 )
 
@@ -24,28 +23,13 @@ func (t *testingT) Error(args ...interface{}) {
 	}
 }
 
-// applyChecks apply checks on result, return true if all assertions are OK, false otherwise
-func applyChecks(executorResult *ExecutorResult, step TestStep, defaultAssertions *StepAssertions, l Logger) (bool, []Failure, []Failure, string, string) {
-	isOK, errors, failures, systemout, systemerr := applyAssertions(*executorResult, step, defaultAssertions, l)
-	if !isOK {
-		return isOK, errors, failures, systemout, systemerr
-	}
-
-	isOKExtract, errorsExtract, failuresExtract := applyExtracts(executorResult, step, l)
-
-	errors = append(errors, errorsExtract...)
-	failures = append(failures, failuresExtract...)
-
-	return isOKExtract, errors, failures, systemout, systemerr
-}
-
 func applyAssertions(executorResult ExecutorResult, step TestStep, defaultAssertions *StepAssertions, l Logger) (bool, []Failure, []Failure, string, string) {
 	var sa StepAssertions
 	var errors []Failure
 	var failures []Failure
 	var systemerr, systemout string
 
-	if err := mapstructure.Decode(step, &sa); err != nil {
+	if err := Unmarshal(step, &sa); err != nil {
 		return false, []Failure{{Value: fmt.Sprintf("error decoding assertions: %s", err)}}, failures, systemout, systemerr
 	}
 

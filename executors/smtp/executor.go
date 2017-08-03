@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/fsamin/go-dump"
-	"github.com/mitchellh/mapstructure"
 
 	"github.com/runabove/venom"
 )
@@ -51,7 +50,7 @@ func (Executor) GetDefaultAssertions() *venom.StepAssertions {
 // Run execute TestStep of type exec
 func (Executor) Run(testCaseContext venom.TestCaseContext, l venom.Logger, step venom.TestStep) (venom.ExecutorResult, error) {
 	var t Executor
-	if err := mapstructure.Decode(step, &t); err != nil {
+	if err := venom.Unmarshal(step, &t); err != nil {
 		return nil, err
 	}
 
